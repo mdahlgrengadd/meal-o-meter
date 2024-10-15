@@ -7,7 +7,6 @@ matplotlib
 streamlit
 streamlit_apexjs
 streamlit_extras
-st_aggrid 
 altair 
 plotly
 
