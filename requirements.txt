@@ -1,0 +1,8 @@
+pandas
+plotly
+numpy
+pandas
+numpy
+matplotlib
+streamlit
+streamlit_apexjs

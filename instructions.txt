@@ -1,0 +1,4 @@
+Create your streamlit project in this folder. 
+- You'll need a virtual environment
+- You'll need some kind of dataset, probably in csv or similar
+- You'll need relevant files for streamlit
