@@ -4,7 +4,6 @@ from streamlit_extras.app_logo import add_logo
 import utils as utl
 from PIL import Image
 import os
-from streamlit_option_menu import option_menu
 from streamlit.components.v1 import html
 
 DB_NAME = "data/RAW_recipes.zip"  # Path to your recipes CSV file
