@@ -6,3 +6,10 @@ numpy
 matplotlib
 streamlit
 streamlit_apexjs
+streamlit_extras
+streamlit_option_menu
+ast
+st_aggrid 
+altair 
+plotly
+
