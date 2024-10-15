@@ -216,40 +216,43 @@ def main_page():
     progress_bar.progress(1.0)
     st.sidebar.success("Plan completed!")
 
-    # Result
-    final_solution = GA.getBestSolution()
-    selectedRecipes = [recipes[i] for i, gene in enumerate(final_solution) if gene]
-    totalCalories = float(sum(recipe.calories for recipe in selectedRecipes))
-    totalProtein = float(sum(recipe.protein for recipe in selectedRecipes))
-    totalFat = float(sum(recipe.fat for recipe in selectedRecipes))
-    totalCarbs = float(sum(recipe.carbs for recipe in selectedRecipes))
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Meal Plan Overview", "Recipe 1", "Recipe 2", "Recipe 3", "Recipe 4","Recipe 5" ,"Recipe 6"])
 
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        colored_header(
-                label="Best Meal Plan",
-                description="According to Science",
-                color_name="red-70",
-            )
-        for recipe in selectedRecipes:
-            st.markdown(f"""
-                        - **{recipe.name}** ({recipe.calories} kcal)\n
-                          *[Protein: {recipe.protein}g / Fat: {recipe.fat}g / Carbs: {recipe.carbs}g]*
-                        """)
-        st.header("Total Sum", divider="grey")
-        st.write(f"Calories: {totalCalories} kcal (Target: {targetCalories} kcal)")
-        st.write(f"Protein: {totalProtein}g (Target: {targetProteins}g)")
-        st.write(f"Fat: {totalFat}g (Target: {targetFat}g)")
-        st.write(f"Carbs: {totalCarbs}g (Target: {targetCarbs}g)")
-        
-    with col2:
-        col3, col4 = st.columns(2)
-        with col3:
-            st.write(make_donut(min ( 100, ((totalProtein / targetProteins) *100.0) ) , "Protein", "green"))
-            st.write(make_donut(min (100, (totalCalories / targetCalories) *100.0), "Calories", "red"))
-        with col4:
-            st.write(make_donut( min (100, (totalFat / targetFat)*100.0), "Fat", "orange"))
-            st.write(make_donut( min (100, (totalCarbs / targetCarbs)*100.0), "Carbohydrates", "blue"))
+    # Result
+    with tab1:
+        final_solution = GA.getBestSolution()
+        selectedRecipes = [recipes[i] for i, gene in enumerate(final_solution) if gene]
+        totalCalories = float(sum(recipe.calories for recipe in selectedRecipes))
+        totalProtein = float(sum(recipe.protein for recipe in selectedRecipes))
+        totalFat = float(sum(recipe.fat for recipe in selectedRecipes))
+        totalCarbs = float(sum(recipe.carbs for recipe in selectedRecipes))
+
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            colored_header(
+                    label="Best Meal Plan",
+                    description="According to Science",
+                    color_name="red-70",
+                )
+            for recipe in selectedRecipes:
+                st.markdown(f"""
+                            - **{recipe.name}** ({recipe.calories} kcal)\n
+                            *[Protein: {recipe.protein}g / Fat: {recipe.fat}g / Carbs: {recipe.carbs}g]*
+                            """)
+            st.header("Total Sum", divider="grey")
+            st.write(f"Calories: {totalCalories} kcal (Target: {targetCalories} kcal)")
+            st.write(f"Protein: {totalProtein}g (Target: {targetProteins}g)")
+            st.write(f"Fat: {totalFat}g (Target: {targetFat}g)")
+            st.write(f"Carbs: {totalCarbs}g (Target: {targetCarbs}g)")
+            
+        with col2:
+            col3, col4 = st.columns(2)
+            with col3:
+                st.write(make_donut(min (100, (totalCalories / targetCalories) *100.0), "Calories", "red"))
+                st.write(make_donut(min ( 100, ((totalProtein / targetProteins) *100.0) ) , "Protein", "green"))
+            with col4:
+                st.write(make_donut( min (100, (totalFat / targetFat)*100.0), "Fat", "orange"))
+                st.write(make_donut( min (100, (totalCarbs / targetCarbs)*100.0), "Carbohydrates", "blue"))
 
 
 #if __name__ == "__main__":

@@ -45,30 +45,33 @@ def PageSetup():
 
     add_logo("Logo.png", height=400)
     # Add a slider to the sidebar:
-    calories_goal = st.sidebar.slider(
-        'Select Total Calories (Per Plan)',
-        1400, 4500, (2600), key="cal_slider"
-    )
-    prot_goal = st.sidebar.slider(
-        'Select Total Protein (g) (Per Plan)',
-        0, 400, (100), key="prot_slider"
-    )
-    fat_goal = st.sidebar.slider(
-        'Select Total Fat (g) (Per Plan)',
-        0, 200, (50), key="fat_slider"
-    )
-    carbs_goal = st.sidebar.slider(
-        'Select Total Carbs (g) (Per Plan)',
-        0, 500, (200), key="carb_slider"
-    )
+    with st.sidebar.form("my_form"):
+        calories_goal = st.slider(
+            'Select Total Calories (Per Plan)',
+            1400, 4500, (2600), key="cal_slider"
+        )
+        prot_goal = st.slider(
+            'Select Total Protein (g) (Per Plan)',
+            0, 400, (100), key="prot_slider"
+        )
+        fat_goal = st.slider(
+            'Select Total Fat (g) (Per Plan)',
+            0, 200, (50), key="fat_slider"
+        )
+        carbs_goal = st.slider(
+            'Select Total Carbs (g) (Per Plan)',
+            0, 500, (200), key="carb_slider"
+        )
 
-    col1, col2 = st.sidebar.columns([1,3])
+        col1, col2 = st.columns([1,3])
+        with col1:
+            if st.form_submit_button("Run"):
+                    #st.write("slider", calories_goal, "checkbox", prot_goal)
+                    nav_page("Run_Plan")
+            
+        progress_bar_placeholder = col2.empty()
+        st.session_state["progress_placeholder"] = progress_bar_placeholder
 
-    if col1.button("Run"):
-            nav_page("Run_Plan")
-        
-    progress_bar_placeholder = col2.empty()
-    st.session_state["progress_placeholder"] = progress_bar_placeholder
 
 
     pg = st.navigation([st.Page("pages/Home.py", title=f"🏚️ Home"), st.Page("pages/1_Setup_Plan.py", title="⚙️ Setup Diet"), st.Page("pages/2_Run_Plan.py", title="🚀 Run Meal Plan")])

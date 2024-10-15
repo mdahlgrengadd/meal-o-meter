@@ -1,4 +1,8 @@
 # GA_functions.py
+# Original code written by Carl Ahlberg
+# Adapted for the problem at hand by Martin Dahlgren
+
+
 import pandas as pd
 import numpy as np
 import random
@@ -214,7 +218,7 @@ class GA_functions:
                 fat_diff = abs(targetFat - totalFat)
                 carbs_diff = abs(targetCarbs - totalCarbs)
 
-                fitness += (protein_diff * 0.5)*100  + (fat_diff * 0.5)*100 + (carbs_diff * 0.5)*100
+                fitness += (protein_diff * 0.5)*100 + (fat_diff * 0.5)*100 + (carbs_diff * 0.5)*100
 
             populationFitness.append(fitness)
             calorieDiffs.append(calorie_diff)  # Store the signed calorie difference
