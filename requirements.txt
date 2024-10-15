@@ -9,4 +9,4 @@ streamlit_apexjs
 streamlit_extras
 altair 
 plotly
-
+scipy
