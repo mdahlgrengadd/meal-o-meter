@@ -9,7 +9,7 @@ import time
 from streamlit.hello.utils import show_code
 from GA_functions import GA_functions
 ### PLOTTING
-from st_aggrid import AgGrid, GridOptionsBuilder 
+#from st_aggrid import AgGrid, GridOptionsBuilder 
 #import matplotlib.pyplot as plt
 import altair as alt
 import plotly.figure_factory as ff
@@ -102,42 +102,43 @@ def main_page():
 
             df_grouped = df_selection.groupby(["id", "name" ,"minutes","nutrition", "calories", "protein", "fat", "carbs"])['ingredients_list'].apply(list).reset_index()
     
-    gb = GridOptionsBuilder()
+    #AGrid not working when deploying
+    # gb = GridOptionsBuilder()
 
-    # makes columns resizable, sortable and filterable by default
-    gb.configure_default_column(
-        resizable=True,
-        filterable=True,
-        sortable=True,
-        editable=False,
-    )
-    gb.configure_column(
-    field="name", header_name="Recipe", width=450, tooltipField="Recipe"
-    )
-    gb.configure_column(
-    field="calories", header_name="Kcal", width=75, tooltipField="Calories"
-    )
-    gb.configure_column(
-    field="protein", header_name="Protein", width=100, tooltipField="Protein"
-    )
-    gb.configure_column(
-    field="fat", header_name="Fat", width=75, tooltipField="Fat"
-    )
-    gb.configure_column(
-    field="carbs", header_name="Sugar", width=75, tooltipField="Sugar"
-    )
+    # # makes columns resizable, sortable and filterable by default
+    # gb.configure_default_column(
+    #     resizable=True,
+    #     filterable=True,
+    #     sortable=True,
+    #     editable=False,
+    # )
+    # gb.configure_column(
+    # field="name", header_name="Recipe", width=450, tooltipField="Recipe"
+    # )
+    # gb.configure_column(
+    # field="calories", header_name="Kcal", width=75, tooltipField="Calories"
+    # )
+    # gb.configure_column(
+    # field="protein", header_name="Protein", width=100, tooltipField="Protein"
+    # )
+    # gb.configure_column(
+    # field="fat", header_name="Fat", width=75, tooltipField="Fat"
+    # )
+    # gb.configure_column(
+    # field="carbs", header_name="Sugar", width=75, tooltipField="Sugar"
+    # )
 
-    gb.configure_column(
-    field="ingredients_list", header_name="Ingredients", width=500, tooltipField="Ingredients"
-    )
+    # gb.configure_column(
+    # field="ingredients_list", header_name="Ingredients", width=500, tooltipField="Ingredients"
+    # )
 
-    #makes tooltip appear instantly
-    gb.configure_grid_options(tooltipShowDelay=0)
-    gb.configure_pagination(enabled=True)
-    go = gb.build()
+    # #makes tooltip appear instantly
+    # gb.configure_grid_options(tooltipShowDelay=0)
+    # gb.configure_pagination(enabled=True)
+    # go = gb.build()
     with placeholder_table:
-        ag = AgGrid(df_grouped[[ "name", "calories", "protein", "fat", "carbs", "ingredients_list",]],gridOptions=go, width=800, height=400)
-    #st.write(df_grouped[["id", "name","minutes", "calories", "nutrition", "ingredients_list"]])
+        #ag = AgGrid(df_grouped[[ "name", "calories", "protein", "fat", "carbs", "ingredients_list",]],gridOptions=go, width=800, height=400)
+        st.write(df_grouped[[ "name", "calories", "protein", "fat", "carbs", "ingredients_list"]])
 
     GA.setSubSelection(df_grouped)
 
