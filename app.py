@@ -32,9 +32,10 @@ def nav_page(page_name, timeout_secs=3):
         </script>
     """ % (page_name, timeout_secs)
     html(nav_script)
+
 # Initialization
 def PageSetup():
-    st.set_page_config(layout="wide", page_title='Demo item')
+    #st.set_page_config(layout="wide", page_title='Demo item')
 
     if 'FoodDataBase' not in st.session_state:
         st.session_state['FoodDataBase'] = GA_functions(DB_NAME)

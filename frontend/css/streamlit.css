@@ -9,6 +9,11 @@ div[data-testid="stCaptionContainer"] {
     text-align: right !important;
 }
 
+div[data-testid="stForm"] {
+  background-color: rgb(252, 252, 252);
+}
+
+
 /* Form */
 .css-1h109da{
     border: none;

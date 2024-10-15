@@ -12,9 +12,36 @@ import plotly.graph_objects as go
 import time
 import plotly.express as px
 from streamlit_extras.colored_header import colored_header
-
+from streamlit.components.v1 import html
 # GA_main.py (add these parameters)
 MAX_RECIPES_PER_INDIVIDUAL = 6  # Adjust based on your needs
+
+
+def nav_page(page_name, timeout_secs=3):
+    nav_script = """
+        <script type="text/javascript">
+            function attempt_nav_page(page_name, start_time, timeout_secs) {
+                var links = window.parent.document.getElementsByTagName("a");
+                for (var i = 0; i < links.length; i++) {
+                    if (links[i].href.toLowerCase().endsWith("/" + page_name.toLowerCase())) {
+                        links[i].click();
+                        return;
+                    }
+                }
+                var elasped = new Date() - start_time;
+                if (elasped < timeout_secs * 1000) {
+                    setTimeout(attempt_nav_page, 100, page_name, start_time, timeout_secs);
+                } else {
+                    alert("Unable to navigate to page '" + page_name + "' after " + timeout_secs + " second(s).");
+                }
+            }
+            window.addEventListener("load", function() {
+                attempt_nav_page("%s", new Date(), %d);
+            });
+        </script>
+    """ % (page_name, timeout_secs)
+    html(nav_script)
+
 
 def make_donut(input_response, input_text, input_color):
   input_response = int(input_response)
@@ -149,6 +176,8 @@ def main_page():
         recipes, numRecipes = GA.updateDataBase()
     except:
         st.warning("Error reading database! Did you forget to setup your diet?")
+        if st.button("Take me there!"):
+            nav_page("Setup_Plan")
         return
 
     # GA parameters
@@ -216,24 +245,26 @@ def main_page():
     progress_bar.progress(1.0)
     st.sidebar.success("Plan completed!")
 
+
+    final_solution = GA.getBestSolution()
+    selectedRecipes = [recipes[i] for i, gene in enumerate(final_solution) if gene]
+    totalCalories = float(sum(recipe.calories for recipe in selectedRecipes))
+    totalProtein = float(sum(recipe.protein for recipe in selectedRecipes))
+    totalFat = float(sum(recipe.fat for recipe in selectedRecipes))
+    totalCarbs = float(sum(recipe.carbs for recipe in selectedRecipes))
+
+
+    colored_header(
+            label="Best Meal Plan",
+            description="According to Science",
+            color_name="red-70",
+        )
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Meal Plan Overview", "Recipe 1", "Recipe 2", "Recipe 3", "Recipe 4","Recipe 5" ,"Recipe 6"])
 
     # Result
     with tab1:
-        final_solution = GA.getBestSolution()
-        selectedRecipes = [recipes[i] for i, gene in enumerate(final_solution) if gene]
-        totalCalories = float(sum(recipe.calories for recipe in selectedRecipes))
-        totalProtein = float(sum(recipe.protein for recipe in selectedRecipes))
-        totalFat = float(sum(recipe.fat for recipe in selectedRecipes))
-        totalCarbs = float(sum(recipe.carbs for recipe in selectedRecipes))
-
         col1, col2 = st.columns([2, 1])
         with col1:
-            colored_header(
-                    label="Best Meal Plan",
-                    description="According to Science",
-                    color_name="red-70",
-                )
             for recipe in selectedRecipes:
                 st.markdown(f"""
                             - **{recipe.name}** ({recipe.calories} kcal)\n
