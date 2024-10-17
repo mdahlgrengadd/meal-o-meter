@@ -1,28 +1,9 @@
 import streamlit as st
-import plotly.figure_factory as ff
-import numpy as np
 from streamlit_extras.colored_header import colored_header
 
+# just a landing page with ChatGPT generated text.
 def intro():
     st.image("MealOMeterCrop.png")
-    # Add histogram data
-    x1 = np.random.randn(200) - 2
-    x2 = np.random.randn(200)
-    x3 = np.random.randn(200) + 2
-
-    # Group data together
-    hist_data = [x1, x2, x3]
-
-    group_labels = ['Group 1', 'Group 2', 'Group 3']
-
-    # Create distplot with custom bin_size
-    fig = ff.create_distplot(
-            hist_data, group_labels, bin_size=[.1, .25, .5])
-
-    # Plot!
-    #st.plotly_chart(fig, use_container_width=True)
-
-
 
     colored_header(
             label="",
@@ -53,8 +34,6 @@ def intro():
         Step into tomorrow, today, with **Meal-O-Meter**. Because when science and nutrition come together, the future looks delicious!
 
         """)
-
-
 
 
 intro()

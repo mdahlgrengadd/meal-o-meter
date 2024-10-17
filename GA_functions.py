@@ -1,7 +1,7 @@
 # GA_functions.py
 # Original code written by Carl Ahlberg
 # Adapted for the problem at hand by Martin Dahlgren
-
+# IMPORTANT! ChatGPT _has_ been used as a coding assistant
 
 import pandas as pd
 import numpy as np
@@ -11,8 +11,9 @@ import ast
 import streamlit as st
 
 MAX_FITNESS_CALLS = 15000 # how many fitness calls are allowed
-MAX_DATA_ENTRIES = 10000 # number of recipes in database
+MAX_DATA_ENTRIES = 10000 # limit the number of recipes in database. "Food.com" dataset has about 200.000 recipes.
 
+# we store the fields we are interested in from the database in this class
 class Recipe:
     def __init__(self, id, name, calories, protein, fat, carbs, tags):
         self.id = id
@@ -21,21 +22,29 @@ class Recipe:
         self.protein = protein
         self.fat = fat
         self.carbs = carbs
-        self.tags = tags
+        self.tags = tags # like "vegetarian", "breakfast" etc
 
+# we use a seperate function to load the dataframe so that streamlit can cache it.
+# this avoids the database having to reload when something changes that would trigger a streamlit rerun.
 @st.cache_data
 def load_data(_database_filename) -> pd.DataFrame:
     df = pd.read_csv(_database_filename)
     return df
 
+# GA class is just a collection of functions for a Genetic Algorithm made by Carl Ahlberg.
+# Using a class so that they form a logical group to be used elsewhere.
 class GA_functions:
     def __init__(self, database_filename):
-        self.filename = database_filename
-        self.data = load_data(database_filename)
-        self.data = self.data.sample(MAX_DATA_ENTRIES)
-        self.data_sub = self.data
-        self.bestSolution = None
+        self.filename = database_filename # keep a reference to filename in case we need it later
 
+        # here we load the database and store it as a dataframe 
+        self.data = load_data(database_filename)
+        # to make it more managable the data is reduced. "Food.com" datasset has about 200.000 recepies.
+        self.data = self.data.sample(MAX_DATA_ENTRIES) # FIXME: make this user configurable from streamlit page.
+        self.data_sub = self.data # self.data_sub is a copy that we can edit and alter (we still have access to unedited data in self.data)
+        self.bestSolution = None # here we store the "individual" that ends up with the collection recipes that best match what the user requested.
+
+    # here we convert the dataframe into objects of the Recipe class
     def updateDataBase(self):
         """
         Loads the recipe database from a CSV file using Pandas and returns a list of Recipe objects.
@@ -47,36 +56,31 @@ class GA_functions:
         - recipes (list of Recipe): List containing all Recipe objects.
         - numRecipes (int): Total number of recipes.
         """
-        try:
-            # then we can use it in a multiselect widget to filter individual ingredients
-            self.data_sub['calories'] = self.data_sub['nutrition'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
-            self.data_sub['calories'] = self.data_sub['calories'].apply(lambda x: x[0])
-        except FileNotFoundError:
-            print(f"Error: The file {self.filename} was not found.")
-            sys.exit()
-        except pd.errors.EmptyDataError:
-            print("Error: The CSV file is empty.")
-            sys.exit()
-        except pd.errors.ParserError:
-            print("Error: The CSV file is malformed.")
-            sys.exit()
+        
+        # The "Food.com" dataset has a column "nutrition" where a value in a row might look like "234, 3, 5, 2"
+        # The first value is calories. The following code creates new column called "calories" holding just that value.
+        self.data_sub['calories'] = self.data_sub['nutrition'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+        self.data_sub['calories'] = self.data_sub['calories'].apply(lambda x: x[0])
 
-        required_columns = ['id', 'name', 'nutrition']
+        # a small safety check to see that our database holds all the columns we need.
+        required_columns = ['id', 'name', 'nutrition', 'ingredients_list'] # FIXME: "tags" not implemented yet!
         for column in required_columns:
             if column not in self.data_sub.columns:
                 print(f"Error: Missing required column '{column}' in the dataset.")
                 sys.exit()
 
+        # loop over our data and create a Recipe object for each.
         recipes = []
         for _, row in self.data_sub.iterrows():
             if pd.isnull(row['nutrition']) or pd.isnull(row['name']) or pd.isnull(row['id']):
                 continue  # Skip incomplete data
 
-            #tags = row['dietary_tags']
-            #if pd.isnull(tags):
-            #    tags = []
-            #else:
-            #    tags = [tag.strip().lower() for tag in tags.split(';')]
+            # FIXME: not implemented yet.
+            # tags = row['dietary_tags']
+            # if pd.isnull(tags):
+            #     tags = []
+            # else:
+            #     tags = [tag.strip().lower() for tag in tags.split(';')]
 
             recipe = Recipe(
                 id=int(row['id']),
@@ -85,15 +89,16 @@ class GA_functions:
                 protein=float(row['protein']),
                 fat=float(row['fat']),
                 carbs=float(row['carbs']),
-                tags=[]
+                tags=[] # FIXME: not implemented yet
             )
             print(f"Loaded Recipe: {recipe.name}, Calories: {recipe.calories}, Protein: {recipe.protein}, Fat: {recipe.fat}, Carbs: {recipe.carbs}")
-            recipes.append(recipe)
+            recipes.append(recipe) # finally store each Recipe object in a list
 
         numRecipes = len(recipes)
         print(f"Loaded {numRecipes} recipes from {self.filename}.")
         return recipes, numRecipes
     
+    # let the user make changes to our data, ie filter by ingredients etc..
     def setSubSelection(self, selection: pd.DataFrame):
         self.data_sub = selection
         self.updateDataBase()
@@ -102,6 +107,7 @@ class GA_functions:
     def getSubSelection(self) -> pd.DataFrame:
         return self.data_sub
 
+    # check that the parameters to the genetic algorithm are reasonable
     def checkErrorsInParameters(self, maxGeneration, populationSize, numNewOffspring, mutationProbability, numberMutations, tournamentSize):
         error = 0
         numFitnessCalls = maxGeneration * numNewOffspring + populationSize
@@ -130,8 +136,6 @@ class GA_functions:
             sys.exit()
             
 
-    # GA_functions.py (updated)
-
     def newPopulation(self, populationSize, numRecipes, maxRecipes=12):
         """
         Initializes a new population for the GA with a limited number of recipes selected per individual.
@@ -144,14 +148,24 @@ class GA_functions:
         Returns:
         - population (list of numpy arrays): List containing all individuals.
         """
+        # here we initialize our "population".
+        # "population" is just a list of "individuals".
+        # "individuals" is just list of zeroes or ones meaning if a recipe of that "index" is included or not.
+        # the index is referring to the main "recipes" list returned from self.updateDataBase at startup
         population = []
         for _ in range(populationSize):
-            individual = np.zeros(numRecipes, dtype=int)
+            # first set all to zero
+            individual = np.zeros(numRecipes, dtype=int) 
             selected_indices = np.random.choice(numRecipes, size=maxRecipes, replace=False)
-            individual[selected_indices] = 1
+            # then select random indexes to be equal to 1.
+            # we dont use bool because we want to calculate the sum of "ones" later to check we dont have to many recipes per individual.
+            # FIXME: an idea i have is that some recipes could have higher value depending on user rating for instance to make it more
+            # likely to be included.
+            individual[selected_indices] = 1 
             population.append(individual)
         return population
     
+    # here we calculate how much "individuals" collection of recipes differ from the target goals
     def calculateFitness(self, individuals, recipes, targetCalories, targetProteins, targetFat, targetCarbs, dietaryRestrictions=[], lowerBound=None, upperBound=None, maxRecipes=12):
         """
         Calculates the fitness of each individual in the population.
@@ -160,7 +174,7 @@ class GA_functions:
         - individuals (list of numpy arrays): Current population.
         - recipes (list of Recipe): List of all available recipes.
         - targetCalories (float): Desired total calorie intake.
-        - dietaryRestrictions (list of str): List of dietary restrictions (e.g., ['vegetarian']).
+        # FIXME: implement dietaryRestrictions (list of str): List of dietary restrictions (e.g., ['vegetarian']).
         - lowerBound (float): Minimum acceptable total calories.
         - upperBound (float): Maximum acceptable total calories.
         - maxRecipes (int): Maximum number of recipes per individual.
@@ -170,20 +184,24 @@ class GA_functions:
         - calorieDiffs (list of float): Signed difference between total calories and target calories for each individual.
         """
         populationFitness = []
-        calorieDiffs = []  # To store calorie differences for each individual
+        calorieDiffs = []  # to store calorie differences for each individual
 
+        # loop over all individuals and calculate how well their collection of recipes match the target goal.
         for individual in individuals:
             totalCalories = 0.0
             totalProtein = 0.0
             totalFat = 0.0
             totalCarbs = 0.0
-            valid = True
+            valid = True # FIXME: implement this to have different diets, like "vegetarian"
 
-
+            # "recipes" is an array 
+            # "individual" is an array of same length as recipes that holds a number (0 or 1) indicating if the recipe at equal index should be included or not
+            # the zip function will combine the two so we can know which recipe is include. very pythonic!
             for gene, recipe in zip(individual, recipes):
                 if gene:
+                    # FIXME: implement different diets!
                     # Check dietary restrictions
-                    #if dietaryRestrictions:
+                    # if dietaryRestrictions:
                     #    if not all(restriction in recipe.tags for restriction in dietaryRestrictions):
                     #        valid = False
                     #        break
@@ -194,107 +212,47 @@ class GA_functions:
 
             numSelectedRecipes = np.sum(individual)
 
-            if not valid: # Not yet implemented (Dietary restrictions)
-                fitness = 1e6# float('inf')  # Penalize invalid individuals
-                calorie_diff =1e6# float('inf')  # No meaningful calorie difference
+            # this first check for correct diet is not implemented yet and will not ever happen.
+            # FIXME: not yet implemented (Dietary restrictions)
+            if not valid: 
+                # set to high value. float('inf') is better, but might make visualization harder.
+                fitness = 1e6 # float('inf')  # Penalize invalid individuals
+                calorie_diff = 1e6 # float('inf')  # No meaningful calorie difference
+            # the diet is ok, carry on...
             else:
-                # Calculate signed difference between totalCalories and targetCalories
+                # calculate signed difference between totalCalories and targetCalories
+                # this is used only for visuals so that our histogram plot shows
+                # values on both sides of the peak.
                 calorie_diff = totalCalories - targetCalories
 
-                # Fitness is the absolute difference
+                # fitness is the absolute difference, we only care how big the
+                # difference is from the goal, not if it's above or below the target value.
                 fitness = abs(calorie_diff)
 
-                # Penalty for violating calorie bounds
+                # penalty for violating calorie bounds
                 if lowerBound and totalCalories < lowerBound:
                     fitness += (lowerBound - totalCalories) * 10
                 if upperBound and totalCalories > upperBound:
                     fitness += (totalCalories - upperBound) * 10
 
-                # Penalize for exceeding maxRecipes
+                # penalize for exceeding maxRecipes
                 if numSelectedRecipes > maxRecipes:
                     fitness += (numSelectedRecipes - maxRecipes) * 100
 
+                # penalize for missing protein, fat and carb targets.
                 protein_diff = abs(targetProteins - totalProtein)
                 fat_diff = abs(targetFat - totalFat)
                 carbs_diff = abs(targetCarbs - totalCarbs)
 
                 fitness += (protein_diff * 0.5)*100 + (fat_diff * 0.5)*100 + (carbs_diff * 0.5)*100
 
-            populationFitness.append(fitness)
-            calorieDiffs.append(calorie_diff)  # Store the signed calorie difference
+            populationFitness.append(fitness) # for algorithm
+            calorieDiffs.append(calorie_diff) # for better visuals
 
-        # Return both the original populationFitness and the caloric differences
         return populationFitness, calorieDiffs
 
-
-    def calculateFitnessAbsolute(self, individuals, recipes, targetCalories, dietaryRestrictions=[], lowerBound=None, upperBound=None, maxRecipes=12):
-        """
-        Calculates the fitness of each individual in the population.
-
-        Parameters:
-        - individuals (list of numpy arrays): Current population.
-        - recipes (list of Recipe): List of all available recipes.
-        - targetCalories (float): Desired total calorie intake.
-        - dietaryRestrictions (list of str): List of dietary restrictions (e.g., ['vegetarian']).
-        - lowerBound (float): Minimum acceptable total calories.
-        - upperBound (float): Maximum acceptable total calories.
-        - maxRecipes (int): Maximum number of recipes per individual.
-
-        Returns:
-        - populationFitness (list of float): Fitness scores for each individual.
-        """
-        populationFitness = []
-        for individual in individuals:
-            totalCalories = 0
-            totalProtein = 0
-            totalFat = 0
-            totalCarbs = 0
-            valid = True
-
-            for gene, recipe in zip(individual, recipes):
-                if gene:
-                    # Check dietary restrictions
-                    #if dietaryRestrictions:
-                    #    if not all(restriction in recipe.tags for restriction in dietaryRestrictions):
-                    #        valid = False
-                    #        break
-                    totalCalories += recipe.calories
-                    totalProtein += recipe.protein
-                    totalFat += recipe.fat
-                    totalCarbs += recipe.carbs
-
-            numSelectedRecipes = np.sum(individual)
-
-            if not valid:
-                fitness = 1e6 # Use a large value instead of float('inf')  # Penalize invalid individuals
-            else:
-                calorie_diff = abs(targetCalories - totalCalories)
-                fitness = calorie_diff  # Primary fitness metric
-
-                # Penalty for violating calorie bounds
-                if lowerBound and totalCalories < lowerBound:
-                    fitness += (lowerBound - totalCalories) * 10
-                if upperBound and totalCalories > upperBound:
-                    fitness += (totalCalories - upperBound) * 10
-
-                # Penalize for exceeding maxRecipes
-                if numSelectedRecipes > maxRecipes:
-                    fitness += (numSelectedRecipes - maxRecipes) * 100  # Adjust penalty weight as needed
-
-                # Optional: Penalize for nutritional imbalances
-                desiredProtein = 50  # Example target in grams
-                desiredFat = 70      # Example target in grams
-                desiredCarbs = 250   # Example target in grams
-
-                protein_diff = max(0, desiredProtein - totalProtein)
-                fat_diff = max(0, desiredFat - totalFat)
-                carbs_diff = max(0, desiredCarbs - totalCarbs)
-
-                #fitness += (protein_diff * 0.5) + (fat_diff * 0.3) + (carbs_diff * 0.2)
-
-            populationFitness.append(fitness)
-        return populationFitness
-
+    # each generation some individuals are set out for tournament,
+    # the winners will be used to create new individuals for the next generation.
     def parentSelectionTournament(self, population, populationFitness, tournamentSize=3):
         """
         Selects two parents using tournament selection.
@@ -309,6 +267,7 @@ class GA_functions:
         """
         parents = []
         for _ in range(2):
+            # very pythonic! pick the 2 best individuals from a random set consisting of "tournamentSize" number of contestants. 
             tournament_indices = random.sample(range(len(population)), tournamentSize)
             tournament_fitness = [populationFitness[i] for i in tournament_indices]
             winner_index = tournament_indices[np.argmin(tournament_fitness)]  # Lower fitness is better
@@ -317,6 +276,9 @@ class GA_functions:
         #print(f"Selected Parent Fitness: {parents[0]} - Sum: {sum(parents[0])}")
         return parents
 
+    # here we take two "parent" individuals and switch there values from a random point until the end.
+    # doing so could potentially create an individual with more than "maxRecipes" of ones, so we need 
+    # to handle that too.
     def crossover(self, parents, maxRecipes=12):
         """
         Performs single-point crossover between two parents and ensures offspring do not exceed maxRecipes.
@@ -332,11 +294,11 @@ class GA_functions:
         offspring1 = np.concatenate([parents[0][:crossover_point], parents[1][crossover_point:]])
         offspring2 = np.concatenate([parents[1][:crossover_point], parents[0][crossover_point:]])
 
-        # Ensure offspring do not exceed maxRecipes
+        # ensure offspring do not exceed maxRecipes
         for offspring in [offspring1, offspring2]:
             num_selected = np.sum(offspring)
             if num_selected > maxRecipes:
-                # Randomly deselect excess recipes
+                # randomly deselect excess recipes
                 excess = int(num_selected - maxRecipes)
                 selected_indices = np.where(offspring == 1)[0]
                 deselect_indices = np.random.choice(selected_indices, size=excess, replace=False)
@@ -344,6 +306,7 @@ class GA_functions:
 
         return offspring1, offspring2
 
+    # just flip the value at random point but check so that maxRecipes is not exceeded
     def mutation(self, individual, mutationProbability, numMutations, maxRecipes=12):
         """
         Applies bit-flip mutation to an individual without exceeding the maximum number of recipes.
@@ -430,28 +393,6 @@ class GA_functions:
                 # Debugging: Print individual calories and verify
                 for recipe in selectedRecipes:
                     print(f"- {recipe.name} ({recipe.calories} kcal)  ({recipe.protein} g)  ({recipe.fat} g)  ({recipe.carbs} g)")
-        if showPopulationDistribution:
-            # plt.figure(2)
-            # plt.clf()
-            # plt.hist(populationFitness, bins=20, color='blue', alpha=0.7)
-            # plt.title(f'Population Fitness at Generation {g+1}')
-            # plt.xlabel('Calorie Difference')
-            # plt.ylabel('Number of Individuals')
-            # plt.pause(0.01)
-            # plt.draw()
-            pass
-
-        # if (g+1) == maxGeneration:
-        #     print('\nFinal Best Fitness:', currentBest)
-        #     if showBestSolution:
-        #         self.bestSolution = population[indexBestSolution]
-        #         selectedRecipes = [recipes[i] for i, gene in enumerate(self.bestSolution) if gene]
-        #         totalCalories = sum(recipe.calories for recipe in selectedRecipes)
-
-        #         print("\nFinal Best Meal Plan:")
-        #         for recipe in selectedRecipes:
-        #             print(f"- {recipe.name} ({recipe.calories} kcal)")
-        #         print(f"Total Calories: {totalCalories} kcal (Target: {targetCalories} kcal)")
 
         return bestFitness
 

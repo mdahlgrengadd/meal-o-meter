@@ -17,6 +17,8 @@ from streamlit.components.v1 import html
 MAX_RECIPES_PER_INDIVIDUAL = 6  # Adjust based on your needs
 
 
+# https://github.com/streamlit/streamlit/issues/4832
+# this hack allows for a button to switch page.
 def nav_page(page_name, timeout_secs=3):
     nav_script = """
         <script type="text/javascript">
@@ -42,7 +44,8 @@ def nav_page(page_name, timeout_secs=3):
     """ % (page_name, timeout_secs)
     html(nav_script)
 
-
+# these are from the class video https://www.youtube.com/watch?v=asFqpMDSPdM
+# https://github.com/dataprofessor/population-dashboard
 def make_donut(input_response, input_text, input_color):
   input_response = int(input_response)
   if input_color == 'blue':
@@ -89,53 +92,17 @@ def make_donut(input_response, input_text, input_color):
 def update_plot(placeholder, populationFitness, bin_size, generation):
     x_range = [ st.session_state['cal_slider'] * -1, st.session_state['cal_slider']]
 
-    # Create a DataFrame for Plotly Express
+    # create a dataframe for plotly Express
     df = pd.DataFrame({
         'Calorie Difference': populationFitness
     })
 
-    # Define binning parameters
-    min_diff = df['Calorie Difference'].min()
-    max_diff = df['Calorie Difference'].max()
-
-   # Handle case where all data points are identical
-    if min_diff == max_diff:
-        # Define a small range around the identical value
-        aligned_min = min_diff - 1
-        aligned_max = max_diff + 1
-
-    else:
-        # Ensure that 0 is within the bin range
-        num_bins_neg = int(np.ceil(abs(min_diff) / bin_size))
-        num_bins_pos = int(np.ceil(abs(max_diff) / bin_size))
-
-        # Calculate the new min and max to align bins symmetrically around 0 if possible
-        aligned_min = -num_bins_neg * bin_size
-        aligned_max = num_bins_pos * bin_size
-
-        # Handle case where min_diff < aligned_min or max_diff > aligned_max
-        if min_diff < aligned_min:
-            aligned_min = min_diff - bin_size
-        if max_diff > aligned_max:
-            aligned_max = max_diff + bin_size
-
-    # Calculate the number of bins as an integer
-    total_bins = int(np.ceil((aligned_max - aligned_min) / bin_size))
-    if total_bins < 1:
-        total_bins = 1  # Ensure at least one bin
-
-    # If data is too sparse, adjust the bin size or range
-    if total_bins < 2:
-        aligned_min = min_diff - bin_size
-        aligned_max = max_diff + bin_size
-        total_bins = 2  # Ensure at least two bins
-
-
+    nbins = int((df['Calorie Difference'].max() - df['Calorie Difference'].min()) / bin_size)
     # Create histogram with density
     fig = px.histogram(
         df, 
         x='Calorie Difference',
-        nbins=total_bins,
+        nbins=nbins,
         histnorm='density',
         opacity=0.7,
         title=f'Population Calorie Difference at Generation {generation + 1}',

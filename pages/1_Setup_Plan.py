@@ -5,9 +5,9 @@ import pandas as pd
 import numpy as np
 import ast
 import streamlit as st
-import time
 from streamlit.hello.utils import show_code
 from GA_functions import GA_functions
+from typing import cast
 ### PLOTTING
 #from st_aggrid import AgGrid, GridOptionsBuilder 
 #import matplotlib.pyplot as plt
@@ -28,30 +28,33 @@ def main_page():
             if 'FoodDataBase' not in st.session_state:
                 raise SystemError
             
-            GA = st.session_state.FoodDataBase
+            # use cast only to make it readable for type checkers
+            GA = cast(GA_functions, st.session_state.FoodDataBase)
 
             df = GA.data
 
-            # clean up data
+            # clean up data, remove rows with empty fields
             # https://stackoverflow.com/questions/29314033/drop-rows-containing-empty-cells-from-a-pandas-dataframe
-            #st.write(df.isnull().sum())
             df['description'].replace('', np.nan, inplace=True)
             df.dropna(subset=['description'], inplace=True)
 
             df['name'].replace('', np.nan, inplace=True)
             df.dropna(subset=['name'], inplace=True)
-            #st.write(df.isnull().sum())
 
-            #st.write(df.shape)
-
+            # make a new dataframe with only the columns where interested in
             cropped_data = df[["id", "name","minutes", "nutrition","ingredients"]]
 
-            # this converts a "string representation of a list" into a actual list
+            # this converts a "string representation of a list" into an actual list
             # then we can use it in a multiselect widget to filter individual ingredients
+            # FIXME: however the ingredients are not very well structured, for instance there is "milk", "milk 0.1%" etc
             cropped_data['ingredients_list'] = cropped_data['ingredients'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
             cropped_data['ingredients_list'] = cropped_data['ingredients_list'].apply(lambda x: [i.strip().lower() for i in x])
 
+
+            # to be able to filter rows according to ingredients, each ingredient has to
+            # be on its own row. this is what explode does.
             all_ingredients = cropped_data.explode('ingredients_list')
+            # remove duplicates using unique()
             unique_ingredients = sorted(all_ingredients["ingredients_list"].unique())
             ingredients = st.multiselect(
                 "Ingredients (optional and buggy)",
@@ -76,21 +79,25 @@ def main_page():
             all_ingredients['carbs'] = all_ingredients['carbs'].apply(lambda x: x[2])
 
             unique_selection = sorted(all_ingredients.index.unique()) # can be used in a multiselect box
-            # Add a slider to the sidebar:
+
+            # here the user can set a range from low to high of how many calories that each recipe should fall into
             with cent_co:
                 calories_per_recipe = st.slider(
                     'Recipes by Caloric Range (not what you think)',
                     1, 2000, (1, 900)
                 )
+            
+            rng = range(calories_per_recipe[0],calories_per_recipe[1])
+            df_selection = all_ingredients.loc[all_ingredients.calories.isin(rng)]
+
+            # FIXME: allow for user to set how many recipes should be included from the dataset
             # with last_co:
             #     max_recipes_slider = st.slider(
             #         'Limit Amount of Recipes',
             #         100, 100000, (5000), key="max_recipes"
             #     )
 
-            rng = range(calories_per_recipe[0],calories_per_recipe[1])
-            df_selection = all_ingredients.loc[all_ingredients.calories.isin(rng)]
-
+            # here the user can filter recipes according to ingredients
             if ingredients:
                 df_selection = df_selection.query(
                     "ingredients_list == @ingredients & index == @unique_selection"
@@ -100,11 +107,14 @@ def main_page():
                     "index == @unique_selection"
                 )
 
+
+            # this is the final resulting dataframe after cleaning and filtering
             df_grouped = df_selection.groupby(["id", "name" ,"minutes","nutrition", "calories", "protein", "fat", "carbs"])['ingredients_list'].apply(list).reset_index()
     
-    #AGrid not working when deploying
-    # gb = GridOptionsBuilder()
+    # FIXME: AGrid not working when deploying to streamlit web
+    # so use comment it out and use the standard instead
 
+    # gb = GridOptionsBuilder()
     # # makes columns resizable, sortable and filterable by default
     # gb.configure_default_column(
     #     resizable=True,
@@ -127,17 +137,16 @@ def main_page():
     # gb.configure_column(
     # field="carbs", header_name="Sugar", width=75, tooltipField="Sugar"
     # )
-
     # gb.configure_column(
     # field="ingredients_list", header_name="Ingredients", width=500, tooltipField="Ingredients"
     # )
-
     # #makes tooltip appear instantly
     # gb.configure_grid_options(tooltipShowDelay=0)
     # gb.configure_pagination(enabled=True)
     # go = gb.build()
+
     with placeholder_table:
-        #ag = AgGrid(df_grouped[[ "name", "calories", "protein", "fat", "carbs", "ingredients_list",]],gridOptions=go, width=800, height=400)
+        # ag = AgGrid(df_grouped[[ "name", "calories", "protein", "fat", "carbs", "ingredients_list",]],gridOptions=go, width=800, height=400)
         st.write(df_grouped[[ "name", "calories", "protein", "fat", "carbs", "ingredients_list"]])
 
     GA.setSubSelection(df_grouped)
