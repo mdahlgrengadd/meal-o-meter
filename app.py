@@ -50,7 +50,8 @@ def PageSetup():
     # add sliders to the sidebar.
     # we use a form so that the sliders can be manipulated
     # without triggering a rerun until users clicks "run"
-    with st.sidebar.form("my_form"):
+    form =  st.sidebar.form("my_form")
+    with form:
         calories_goal = st.slider(
             'Select Total Calories (Per Plan)',
             1400, 4500, (2600), key="cal_slider"
@@ -67,7 +68,31 @@ def PageSetup():
             'Select Total Carbs (g) (Per Plan)',
             0, 500, (200), key="carb_slider"
         )
-
+        
+        # Genetic Algorithm Parameters
+        expander = form.expander("Configure Genetic Algorithm")
+        with expander:        
+            expander.populationSize = st.slider(
+                    'populationSize',
+                    10, 5000, (1000), key="populationSize_slider"
+                )
+            expander.numNewOffspring = st.slider(
+                    'numNewOffspring',
+                    1, 1000, (100), key="numNewOffspring_slider"
+                )
+            expander.mutationProbability = st.slider(
+                    'mutationProbability',
+                    0.0, 1.0, (0.05), key="mutationProbability_slider"
+                )
+            expander.numberMutations = st.slider(
+                    'numberMutations',
+                    1, 10, (2), key="numberMutations_slider"
+                )
+            expander.tournamentSize = st.slider(
+                    'tournamentSize',
+                    3, 9, (3), key="tournamentSize_slider"
+                )
+        
         # here we put the run button side to side with the progress bar
         col1, col2 = st.columns([1,3])
         with col1:

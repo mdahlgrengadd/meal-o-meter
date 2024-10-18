@@ -190,13 +190,13 @@ def main_page():
             nav_page("Setup_Plan")
         return
 
-    # GA parameters
-    populationSize = 1000
-    numNewOffspring = 100  # Must ensure (maxGeneration * numNewOffspring + populationSize) <= 10,000
+    # get GA parameters from sliders
+    populationSize = st.session_state.populationSize_slider #1000
+    numNewOffspring = st.session_state.numNewOffspring_slider # 100  # Must ensure (maxGeneration * numNewOffspring + populationSize) <= 10,000
     maxGeneration = (MAX_FITNESS_CALLS - populationSize) // numNewOffspring
-    mutationProbability = 0.05  # Probability for each mutation
-    numberMutations = 2 # Number of mutations per individual
-    tournamentSize = 3
+    mutationProbability = st.session_state.mutationProbability_slider # 0.05  # Probability for each mutation
+    numberMutations = st.session_state.numberMutations_slider # 2 # Number of mutations per individual
+    tournamentSize = st.session_state.tournamentSize_slider # 3
 
     GA.checkErrorsInParameters(maxGeneration, populationSize, numNewOffspring, mutationProbability, numberMutations, tournamentSize)
 
