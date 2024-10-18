@@ -125,6 +125,49 @@ def update_plot(placeholder, populationFitness, bin_size, generation):
     placeholder.plotly_chart(fig, use_container_width=True)
     # time.sleep(0.01) # slow down visualization
 
+def placeholder_recipe() -> tuple[str, str]:
+    recipe ="""
+# Chocolate Chip Banana Bread
+## 📝 Steps to Make
+1. Preheat your oven to 350°F (175°C). Grease a 9x5 inch loaf pan.
+2. In a large bowl, mix the mashed bananas and melted butter.
+3. Add the sugar, beaten egg, and vanilla extract. Mix well.
+4. Sprinkle the baking soda and salt over the mixture, then mix in the flour until just combined.
+5. Fold in the chocolate chips.
+6. Pour the batter into the prepared loaf pan.
+7. Bake in the preheated oven for 50 minutes, or until a toothpick inserted into the center comes out clean.
+8. Let cool in the pan for 10 minutes, then transfer to a wire rack to cool completely.
+
+## 🏷️ Tags
+- #Dessert
+- #Vegetarian
+- #Baking
+
+---
+
+"""
+    ingredients = """
+## 🕒 Time to Cook
+- **Preparation Time**: 10 minutes
+- **Cooking Time**: 50 minutes
+- **Total Time**: 1 hour
+
+## 🍽️ Ingredients
+- **Servings**: 8 servings
+
+### Main Ingredients
+- 3 ripe bananas, mashed
+- 1/3 cup melted butter
+- 1/2 cup sugar
+- 1 egg, beaten
+- 1 teaspoon vanilla extract
+- 1 teaspoon baking soda
+- Pinch of salt
+- 1 1/2 cups all-purpose flour
+- 1/2 cup chocolate chips
+"""
+    return recipe, ingredients
+
 def main_page():
     progress_place = st.session_state["progress_placeholder"]
     progress_bar = progress_place.progress(0)
@@ -226,9 +269,16 @@ def main_page():
             description="According to Science",
             color_name="red-70",
         )
+    # create a tab menu for displaying the recipes
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(["Meal Plan Overview", "Recipe 1", "Recipe 2", "Recipe 3", "Recipe 4","Recipe 5" ,"Recipe 6"])
+    for t in [tab2, tab3, tab4, tab5, tab6, tab7]:
+        txt_rcp, txt_ing = placeholder_recipe()
+        c1, c2 = t.columns([2,1])
+        c1.markdown(txt_rcp)
+        c2.markdown(txt_ing)
 
-    # Result
+    
+    # main result
     with tab1:
         col1, col2 = st.columns([2, 1])
         with col1:
@@ -237,12 +287,36 @@ def main_page():
                             - **{recipe.name}** ({recipe.calories} kcal)\n
                             *[Protein: {recipe.protein}g / Fat: {recipe.fat}g / Carbs: {recipe.carbs}g]*
                             """)
-            st.header("Total Sum", divider="grey")
-            st.write(f"Calories: {totalCalories} kcal (Target: {targetCalories} kcal)")
-            st.write(f"Protein: {totalProtein}g (Target: {targetProteins}g)")
-            st.write(f"Fat: {totalFat}g (Target: {targetFat}g)")
-            st.write(f"Carbs: {totalCarbs}g (Target: {targetCarbs}g)")
-            
+            st.header("Nutrients", divider="grey")
+
+            # display the result numerically
+            metric1, metric2, metric3, metric4 = st.columns(4)
+            metric1.metric(
+                label=f'Calories',
+                value=f'{totalCalories:,.0f}',
+                delta=totalCalories-targetCalories,
+                delta_color='normal'
+            )
+            metric2.metric(
+                label=f'Protein',
+                value=f'{totalProtein:,.0f}',
+                delta=totalProtein-targetProteins,
+                delta_color='normal'
+            )
+            metric3.metric(
+                label=f'Fat',
+                value=f'{totalFat:,.0f}',
+                delta=totalFat-targetFat,
+                delta_color='normal'
+            )
+            metric4.metric(
+                label=f'Carbs',
+                value=f'{totalCarbs:,.0f}',
+                delta=totalCarbs-targetCarbs,
+                delta_color='normal'
+            )
+         
+        # this are the circle plots showing percentages   
         with col2:
             col3, col4 = st.columns(2)
             with col3:
