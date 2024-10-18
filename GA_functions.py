@@ -41,7 +41,7 @@ class GA_functions:
         self.data = load_data(database_filename)
         # to make it more managable the data is reduced. "Food.com" datasset has about 200.000 recepies.
         self.data = self.data.sample(MAX_DATA_ENTRIES) # FIXME: make this user configurable from streamlit page.
-        self.data_sub = self.data # self.data_sub is a copy that we can edit and alter (we still have access to unedited data in self.data)
+        self.data_sub = self.data.copy() # self.data_sub is a copy that we can edit and alter (we still have access to unedited data in self.data)
         self.bestSolution = None # here we store the "individual" that ends up with the collection recipes that best match what the user requested.
 
     # here we convert the dataframe into objects of the Recipe class
@@ -237,14 +237,14 @@ class GA_functions:
 
                 # penalize for exceeding maxRecipes
                 if numSelectedRecipes > maxRecipes:
-                    fitness += (numSelectedRecipes - maxRecipes) * 100
+                    fitness += abs(numSelectedRecipes - maxRecipes) * 100
 
                 # penalize for missing protein, fat and carb targets.
-                protein_diff = abs(targetProteins - totalProtein)
-                fat_diff = abs(targetFat - totalFat)
-                carbs_diff = abs(targetCarbs - totalCarbs)
+                protein_diff = abs(targetProteins - totalProtein) * 100
+                fat_diff = abs(targetFat - totalFat) * 100
+                carbs_diff = abs(targetCarbs - totalCarbs) * 100
 
-                fitness += (protein_diff * 0.5)*100 + (fat_diff * 0.5)*100 + (carbs_diff * 0.5)*100
+                fitness += protein_diff + fat_diff + carbs_diff
 
             populationFitness.append(fitness) # for algorithm
             calorieDiffs.append(calorie_diff) # for better visuals

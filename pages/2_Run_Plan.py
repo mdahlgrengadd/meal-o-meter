@@ -123,7 +123,7 @@ def update_plot(placeholder, populationFitness, bin_size, generation):
 
     # Display plot in Streamlit
     placeholder.plotly_chart(fig, use_container_width=True)
-    time.sleep(0.01) 
+    # time.sleep(0.01) # slow down visualization
 
 def main_page():
     progress_place = st.session_state["progress_placeholder"]
