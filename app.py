@@ -3,11 +3,15 @@ from GA_functions import GA_functions
 from streamlit_extras.app_logo import add_logo
 import utils as utl
 from streamlit.components.v1 import html
+import os
 
 DB_NAME = "data/RAW_recipes.zip"
+NOSQL_DB = "data/filtered_recipes.json"
 
 # https://github.com/streamlit/streamlit/issues/4832
 # this hack allows for a button to switch page.
+
+
 def nav_page(page_name, timeout_secs=3):
     nav_script = """
         <script type="text/javascript">
@@ -34,11 +38,36 @@ def nav_page(page_name, timeout_secs=3):
     html(nav_script)
 
 # initialization
+
+
 def PageSetup():
     # create an instance of GA_functions class and store it
     # in session_state so that it can be referenced later.
     if 'FoodDataBase' not in st.session_state:
-        st.session_state['FoodDataBase'] = GA_functions(DB_NAME)
+        # Initialize GPU settings
+        use_pytorch = True
+        force_gpu = False
+        if 'use_pytorch' in st.session_state:
+            use_pytorch = st.session_state['use_pytorch']
+        if 'force_gpu' in st.session_state:
+            force_gpu = st.session_state['force_gpu']
+
+        # Create GA functions instance
+        ga_instance = GA_functions(
+            DB_NAME, use_pytorch=use_pytorch, force_gpu=force_gpu)
+
+        # Check if we have a saved NoSQL database to load
+        if os.path.exists(NOSQL_DB):
+            # Load the filtered dataset instead of using the raw data
+            st.sidebar.info(
+                "Found saved filtered recipes - loading from NoSQL database")
+            filtered_data = ga_instance.load_from_nosql()
+            if filtered_data is not None and not filtered_data.empty:
+                ga_instance.setSubSelection(filtered_data)
+                st.sidebar.success(
+                    f"Loaded {len(filtered_data)} filtered recipes from NoSQL database")
+
+        st.session_state['FoodDataBase'] = ga_instance
 
     # the utl class is from https://github.com/BugzTheBunny/streamlit_custom_gui.git
     # it allows for custom css file to be used.
@@ -47,10 +76,23 @@ def PageSetup():
     utl.remote_css('https://fonts.googleapis.com/icon?family=Material+Icons')
 
     add_logo("Logo.png", height=400)
+
+    # Hardware acceleration settings (outside the form)
+    with st.sidebar.expander("Hardware Acceleration"):
+        use_pytorch = st.checkbox(
+            "Use PyTorch Optimization", value=True, key="use_pytorch_checkbox")
+        force_gpu = st.checkbox(
+            "Force GPU Usage", value=True, key="force_gpu_checkbox")
+
+        if st.button("Apply Hardware Settings"):
+            st.session_state['use_pytorch'] = use_pytorch
+            st.session_state['force_gpu'] = force_gpu
+            st.warning("Restart the application to apply hardware changes!")
+
     # add sliders to the sidebar.
     # we use a form so that the sliders can be manipulated
     # without triggering a rerun until users clicks "run"
-    form =  st.sidebar.form("my_form")
+    form = st.sidebar.form("my_form")
     with form:
         calories_goal = st.slider(
             'Select Total Calories (Per Plan)',
@@ -68,44 +110,50 @@ def PageSetup():
             'Select Total Carbs (g) (Per Plan)',
             0, 500, (200), key="carb_slider"
         )
-        
+
         # Genetic Algorithm Parameters
         expander = form.expander("Configure Genetic Algorithm")
-        with expander:        
+        with expander:
             expander.populationSize = st.slider(
-                    'populationSize',
-                    10, 5000, (1000), key="populationSize_slider"
-                )
+                'populationSize',
+                100, 10000, (1000), key="populationSize_slider"
+            )
             expander.numNewOffspring = st.slider(
-                    'numNewOffspring',
-                    1, 1000, (100), key="numNewOffspring_slider"
-                )
+                'numNewOffspring',
+                1, 1000, (100), key="numNewOffspring_slider"
+            )
             expander.mutationProbability = st.slider(
-                    'mutationProbability',
-                    0.0, 1.0, (0.05), key="mutationProbability_slider"
-                )
+                'mutationProbability',
+                0.0, 1.0, (0.05), key="mutationProbability_slider"
+            )
             expander.numberMutations = st.slider(
-                    'numberMutations',
-                    1, 10, (2), key="numberMutations_slider"
-                )
+                'numberMutations',
+                1, 10, (2), key="numberMutations_slider"
+            )
             expander.tournamentSize = st.slider(
-                    'tournamentSize',
-                    3, 9, (3), key="tournamentSize_slider"
-                )
-        
+                'tournamentSize',
+                3, 9, (3), key="tournamentSize_slider"
+            )
+            expander.maxGen = st.slider(
+                'Max Generations (override)',
+                10, 2000, (150), key="maxGenerations_slider"
+            )
+            expander.info = st.info(
+                "Setting Max Generations will override the default calculation based on fitness calls budget.")
+
         # here we put the run button side to side with the progress bar
-        col1, col2 = st.columns([1,3])
+        col1, col2 = st.columns([1, 3])
         with col1:
             if st.form_submit_button("Run"):
-                    nav_page("Run_Plan")
-            
+                nav_page("Run_Plan")
+
         progress_bar_placeholder = col2.empty()
         st.session_state["progress_placeholder"] = progress_bar_placeholder
 
     # main page links
-    pg = st.navigation([st.Page("pages/Home.py", title=f"🏚️ Home"), st.Page("pages/1_Setup_Plan.py", title="⚙️ Setup Diet"), st.Page("pages/2_Run_Plan.py", title="🚀 Run Meal Plan")])
+    pg = st.navigation([st.Page("pages/Home.py", title=f"🏚️ Home"), st.Page("pages/1_Setup_Plan.py",
+                       title="⚙️ Setup Diet"), st.Page("pages/2_Run_Plan.py", title="🚀 Run Meal Plan")])
     pg.run()
-    
-    
-PageSetup()
 
+
+PageSetup()

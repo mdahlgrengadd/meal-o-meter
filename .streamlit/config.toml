@@ -1,6 +1,28 @@
+# Streamlit app configuration file to fix torch module watching errors.
+# Add this to the root of your project to exclude PyTorch from being watched by Streamlit.
+
+[server]
+# Whether to enable file watcher. Default: true
+enableXsrfProtection = true
+
+[global]
+# Disable watching files in specific directories that cause issues
+developmentMode = false 
+
+[runner]
+# Prevents Streamlit from monitoring certain packages, including torch
+fastReruns = true
+postScriptGC = true
+
+[watcher]
+# Exclude torch and related packages from file watching
+watchPatterns = ["**/*.py", "**/*.streamlit/*", "**/*.data", "**/*.csv", "**/*.json"]
+unwatchPatterns = ["**/torch/**", "**/.torch/**", "**/.pytorch/**", "**/torch_*/**"]
+
 [theme]
-primaryColor="#FF4B4B"
-backgroundColor="#FFFFFF"
-secondaryBackgroundColor="#F0F2F6"
-textColor="#31333F"
-font="sans serif"
+# Your custom theme options
+primaryColor = "#ff4b4b"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+font = "sans serif"
